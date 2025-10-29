@@ -17,13 +17,32 @@ class Pipe {
   }
 
   void draw() {
-    fill(0, 255, 0);
     noStroke();
 
-    // Cano superior
-    rect(x, 0, width, gapY - gapHeight/2);
+    // ================== CANO INFERIOR ==================
+    
+    float yBaseInferior = gapY + gapHeight / 2;
+    float alturaInferior = height - yBaseInferior;
 
-    // Cano inferior
-    rect(x, gapY + gapHeight/2, width, height - (gapY + gapHeight/2));
+    image(tuboImagem, x, yBaseInferior, width, alturaInferior);
+
+    // Ponta
+    image(tuboBocaImagem, x, yBaseInferior - tuboBocaImagem.height, width, tuboBocaImagem.height);
+
+    // ================== CANO SUPERIOR ==================
+    
+    float alturaSuperior = gapY - gapHeight / 2;
+
+    // Cano superior invertido
+    pushMatrix();
+    translate(x, alturaSuperior);
+    scale(1, -1); // espelha verticalmente
+
+    // Corpo invertido
+    image(tuboImagem, 0, 0, width, alturaSuperior);
+
+    // Ponta invertida
+    image(tuboBocaImagem, 0, -tuboBocaImagem.height, width, tuboBocaImagem.height); 
+    popMatrix();
   }
 }
