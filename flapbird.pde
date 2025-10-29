@@ -1,5 +1,3 @@
-
-
 // ========================= CLASSE BIRD =========================
 class Bird {
   float x, y;
@@ -31,9 +29,9 @@ class Bird {
   }
 
   void draw() {
-    fill(255, 255, 0);
-    noStroke();
-    circle(x, y, 30);
+    imageMode(CENTER);
+    image(birdImage, x, y, 30, 30);
+    imageMode(CORNER);
   }
 
   boolean checkCollision(Pipe pipe) {
