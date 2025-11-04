@@ -1,3 +1,4 @@
+
 // ========================= CLASSE BIRD =========================
 class Bird {
   float x, y;
@@ -5,6 +6,7 @@ class Bird {
   float gravity;
   float jumpForce;
   boolean vivo = true;
+  Pipe proximoPipe = null;
 
   Bird(float xInicial, float yInicial) {
     this.x = xInicial;
@@ -22,6 +24,15 @@ class Bird {
     if (y > height || y < 0) {
       vivo = false;
     }
+    
+
+      
+      try{
+        proximoPipe = encontrarTubo();
+      }catch(Exception e){
+        System.err.println("Nao ha tubos na frente do passaro");
+      }
+    
   }
 
   void jump() {
@@ -46,5 +57,27 @@ class Bird {
     }
 
     return false;
+  }
+  
+  PVector distanciaPassaroTubo(){
+  
+    PVector posPassaro = new PVector(this.x, this.y);
+    PVector posPipe = new PVector(proximoPipe.x, proximoPipe.gapY);
+    
+    return posPassaro.sub(posPipe);
+    
+  
+  }
+  
+  Pipe encontrarTubo() throws Exception{
+    
+    for(Pipe pipe : pipes){
+      if(pipe.x > this.x){
+          return pipe;
+      }
+    }
+    throw new Exception();
+    
+    
   }
 }
