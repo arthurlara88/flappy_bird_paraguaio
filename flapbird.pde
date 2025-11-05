@@ -62,7 +62,7 @@ class Bird {
   PVector distanciaPassaroTubo(){
   
     PVector posPassaro = new PVector(this.x, this.y);
-    PVector posPipe = new PVector(proximoPipe.x, proximoPipe.gapY);
+    PVector posPipe = new PVector(proximoPipe.x, proximoPipe.gapY); //O x aqui deveria considerar a soma de metade do espaçamento do tubo
     
     return posPassaro.sub(posPipe);
     
