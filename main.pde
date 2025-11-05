@@ -7,7 +7,6 @@ final float GAP_ALTURA = 150;
 final float DISTANCIA_ENTRE_TUBOS = 300;
 
 // ========================= PROGRAMA PRINCIPAL =========================
-Bird bird;
 
 PImage tuboImagem;
 PImage tuboBocaImagem;
@@ -20,6 +19,10 @@ float bgX = 0;
 float bgVel = 5;
 int fundoAtual = 0;
 
+BirdCerebro[] birdsAI = new BirdCerebro[500];
+  
+  
+
 void setup() {
   size(600, 900);
   carregarImagens();
@@ -27,25 +30,36 @@ void setup() {
 }
 
 void draw() {
+    
+  // ==================================================
+  // 1. EXIBIÇÃO DE INFORMAÇÕES NO TOPO DA TELA
+    int vivos = contarPassarosVivos();
+    
+    fill(255); // Cor branca
+    textSize(20);
+    textAlign(LEFT, TOP); // Alinha à esquerda, topo
+    text("Vivos: " + vivos + " / " + birdsAI.length, 10, 10); 
+  // ==================================================
+    
   drawFundo();
   
-  if (!bird.vivo) {
-    // --- TELA DE GAME OVER ---
-    fill(0, 180);
-    rect(0, 0, width, height);
-    textAlign(CENTER, CENTER);
-    fill(255, 0, 0);
-    textSize(64);
-    text("GAME OVER", width / 2, height / 2 - 40);
-    fill(255);
-    textSize(28);
-    text("Aperte qualquer tecla para reiniciar", width / 2, height / 2 + 40);
-    return;
+  // --- LÓGICA DE ATUALIZAÇÃO PARA TODOS OS PÁSSAROS ---
+  for(BirdCerebro bird : birdsAI){
+  
+    if(bird.vivo){
+      bird.update();
+      bird.jump(); 
+  
+      // Verifica Colisão
+      for (Pipe p : pipes) {
+        if (bird.checkCollision(p)) {
+          break; 
+        }
+      }
+      bird.draw();
+    }
   }
-  
-  bird.update();
-  bird.draw();
-  
+ 
   // --- ATUALIZA E DESENHA OS TUBOS ---
   for (int i = pipes.size() - 1; i >= 0; i--) {
     Pipe p = pipes.get(i);
@@ -55,10 +69,8 @@ void draw() {
     if (p.x + p.width < 0) {
       pipes.remove(i);
     }
-    
-    bird.checkCollision(p);
   }
-
+  
   // --- GERA NOVO TUBO SE O ÚLTIMO ESTIVER LONGE O SUFICIENTE ---
   if (pipes.size() > 0) {
     Pipe ultimo = pipes.get(pipes.size() - 1);
@@ -66,18 +78,17 @@ void draw() {
       pipes.add(new Pipe(width));
     }
   }
-}
 
-void keyPressed() {
-  if (bird.vivo) {
-    if (key == ' ') bird.jump();
-  } else {
-    reiniciarJogo();
-  }
+    // VERIFICA O FIM DA GERAÇÃO
+    if (contarPassarosVivos() == 0) {
+        reiniciarJogo(); 
+    }
 }
 
 void iniciarJogo() {
-  bird = new Bird(100, height/2);
+  for(int i = 0; i < birdsAI.length; i++){
+    birdsAI[i] = new BirdCerebro(100, height/2);
+  }
   pipes = new ArrayList<Pipe>();
   pipes.add(new Pipe(width));
 }
@@ -107,8 +118,22 @@ void carregarImagens(){
   birdImage = loadImage("resources/bird.png");
   
   fundos[0] = loadImage("resources/image1.jpg");
-  fundos[1] = loadImage("resources/image2.gif");
+  fundos[1] = loadImage("resources/image2.jpg");
   fundos[2] = loadImage("resources/image3.jpeg");
   fundos[3] = loadImage("resources/image4.jpg");
-  fundos[4] = loadImage("resources/image5.jpg");
+  fundos[4] = loadImage("resources/image5.jpeg");
 }
+
+// ========================= MÉTODO DE APOIO =========================
+
+int contarPassarosVivos() {
+    int vivos = 0;
+    for (BirdCerebro bird : birdsAI) {
+        if (bird.vivo) {
+            vivos++;
+        }
+    }
+    return vivos;
+}
+
+// (As classes Pipe, Brain e BirdCerebro devem ser incluídas no final do seu sketch)

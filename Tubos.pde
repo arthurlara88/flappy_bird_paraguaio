@@ -15,6 +15,13 @@ class Pipe {
   void update() {
     x -= VELOCIDADE_TUBO;
   }
+  
+  float[] coordenadasCentroTubo(){
+    float[] coordenadas = new float[2];
+    coordenadas[0] = this.x + width / 2;
+    coordenadas[1] = this.gapY;
+    return coordenadas;
+  }
 
   void draw() {
     noStroke();
@@ -25,7 +32,9 @@ class Pipe {
     float alturaInferior = height - yBaseInferior;
 
     image(tuboImagem, x, yBaseInferior, width, alturaInferior);
-
+    //Coloquei para achar o centro do gap
+    square(coordenadasCentroTubo()[0], coordenadasCentroTubo()[1], 5);
+    fill(#D81A1A);
     // Ponta
     image(tuboBocaImagem, x, yBaseInferior - tuboBocaImagem.height, width, tuboBocaImagem.height);
 

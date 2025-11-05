@@ -1,23 +1,27 @@
 
 // ========================= CLASSE BIRD =========================
-class Bird {
+class BirdCerebro {
   float x, y;
   float velocity;
   float gravity;
   float jumpForce;
   boolean vivo = true;
+  boolean pular = false;
   Pipe proximoPipe = null;
+  float[] valoresInput = new float[5];
+  Brain brain;
   
   
   
   
 
-  Bird(float xInicial, float yInicial) {
+  BirdCerebro(float xInicial, float yInicial) {
     this.x = xInicial;
     this.y = yInicial;
     this.velocity = 0;
     this.gravity = GRAVIDADE;
     this.jumpForce = FORCA_PULO;
+    this.brain = new Brain();
   }
 
   void update() {
@@ -34,13 +38,25 @@ class Bird {
       try{
         proximoPipe = encontrarTubo();
       }catch(Exception e){
-        System.err.println("Nao ha tubos na frente do passaro");
+        return;
       }
+      
+      valoresInput[0] = this.y;
+      valoresInput[1] = this.distanciaPassaroTubo().x;
+      valoresInput[2] = this.distanciaPassaroTubo().y;
+      valoresInput[3] = this.velocity;
+      valoresInput[4] = 1;
+      
+      this.pular = brain.decide(valoresInput);
     
   }
 
   void jump() {
+    
+   
+    if(pular){
     velocity = jumpForce;
+    }
   }
 
   void draw() {
