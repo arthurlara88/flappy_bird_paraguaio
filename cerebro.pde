@@ -1,49 +1,60 @@
-// ========================= CLASSE BRAIN =========================
+// ========================= CLASSE BRAIN (COM MUTAÇÃO GAUSSIANA) =========================
 class Brain {
-  float[] pesos = new float[5]; //pesos do neurônio (sao quatro multiplicacoes mas tem um B que sera somado para melhorar a capacidade de determinacao do algoritmo
-  
-  Brain() {
-    for (int i = 0; i < pesos.length; i++) {
-      pesos[i] = random(-1, 1); 
-    }
-  }
-  
-  Brain(float[] pesoExterno){this.pesos = pesoExterno;}
-  
-  Brain crossover(Brain outro){
-  
-    float[] pesosCerebroFilhote = new float[5];
+    float[] pesos = new float[5]; 
     
-    for(int i = 0; i < pesos.length; i++){
-      
-      if(random(0, 100) < 5){
-          pesosCerebroFilhote[i] = random(-1, 1);
-          continue;
+    Brain() {
+        for (int i = 0; i < pesos.length; i++) {
+            pesos[i] = random(-1, 1);  
         }
-    
-      if(random(0, 10) > 5){
-       pesosCerebroFilhote[i] = this.pesos[i];
-      }else{
-        pesosCerebroFilhote[i] = outro.pesos[i];
-      }
-      
     }
-    Brain novoCerebro = new Brain(pesosCerebroFilhote);
-    return novoCerebro;
     
+    // Construtor para copiar pesos (uso do elitismo e reprodução)
+    Brain(float[] pesoExterno){
+        // Criamos um novo array para evitar que as referências sejam compartilhadas
+        this.pesos = new float[5];
+        for (int i = 0; i < pesos.length; i++) {
+            this.pesos[i] = (i < pesoExterno.length) ? pesoExterno[i] : random(-1, 1);
+        }
+    }
     
-  }
+    Brain crossover(Brain outro){
+        
+        float[] pesosCerebroFilhote = new float[5];
+        final float TAXA_MUTACAO = 0.05; // 5% de chance por peso
+        final float PERTURBACAO = 0.1;   // Intensidade da mudança
+        
+        for(int i = 0; i < pesos.length; i++){
+            
+            // 1. MUTACÃO: Perturbação gaussiana (chance de 5%)
+            if(random(1) < TAXA_MUTACAO){ 
+                
+                // Escolhe o peso de quem vai pertubar
+                float basePeso = (random(0, 10) > 5) ? this.pesos[i] : outro.pesos[i];
+                
+                // Aplica a perturbação suave
+                float novoPeso = basePeso + randomGaussian() * PERTURBACAO; 
+                
+                // Limita o peso (constrain)
+                pesosCerebroFilhote[i] = constrain(novoPeso, -2, 2); 
+                
+            } else {
+                // 2. CROSSOVER:
+                if(random(0, 10) > 5){
+                    pesosCerebroFilhote[i] = this.pesos[i];
+                }else{
+                    pesosCerebroFilhote[i] = outro.pesos[i];
+                }
+            }
+        }
+        Brain novoCerebro = new Brain(pesosCerebroFilhote);
+        return novoCerebro;
+    }
 
-  boolean decide(float[] inputs) {
-    //Os inputs sao, em ordem : Altura do passaro, Distancia X do passaro em relacao ao centro do tubo, Distancia Y do passaro em relacao ao centro do tubo, constante 1;
-    float soma = 0;
-    
-    //soma ponderada: soma += entrada * peso
-    //nota, o valor do ultimo input deve ser 1 para nao atrapalhar na multiplicacao do bias
-    for(int i = 0; i < pesos.length; i++){
-      soma += inputs[i] * pesos[i];
+    boolean decide(float[] inputs) {
+        float soma = 0;
+        for(int i = 0; i < pesos.length; i++){
+            soma += inputs[i] * pesos[i];
+        }
+        return soma > 0;
     }
-    // se a soma for positiva, pula
-    return soma > 0;
-  }
 }

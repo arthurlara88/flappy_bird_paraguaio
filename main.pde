@@ -1,11 +1,16 @@
 // ======================= CONSTANTES ==========================
-final float GRAVIDADE = 0.5;
+final float GRAVIDADE = 0.9;
 final float FORCA_PULO = -9.5;
 final float LARGURA_TUBO = 60;
 final float VELOCIDADE_TUBO = 4;
 final float GAP_ALTURA = 150;
-final float DISTANCIA_ENTRE_TUBOS = 300;
-final int POPULATION_SIZE = 100; 
+final float DISTANCIA_ENTRE_TUBOS = 350;
+final int POPULATION_SIZE = 500; 
+
+// CONFIGURAÇÃO DE ACELERAÇÃO:
+final int TICKS_POR_FRAME = 1000; 
+final int GERACOES_MAX_ACELERADA = 100; // Limite para rodar em alta velocidade
+
 
 // ========================= PROGRAMA PRINCIPAL =========================
 
@@ -27,64 +32,100 @@ float bgVel = 5;
 int fundoAtual = 0;
 
 int geracao = 1; // Contador de gerações
+int pipesPassed = 0; // NOVO: Contador de canos passados pela geração atual
 
 // ========================= SETUP & DRAW =========================
 
 void setup() {
-  size(600, 900);
-  carregarImagens();
-  surface.setTitle("Flappy Bird AI - Geração " + geracao);
-  // Inicializa as listas de população (CORREÇÃO: população agora é birdsAI)
-  birdsAI = new ArrayList<BirdCerebro>();
-  geracaoAnterior = new ArrayList<BirdCerebro>();
-  
-  iniciarJogo();
+    size(600, 900);
+    carregarImagens();
+    surface.setTitle("Flappy Bird AI - Geração " + geracao);
+    birdsAI = new ArrayList<BirdCerebro>();
+    geracaoAnterior = new ArrayList<BirdCerebro>();
+    
+    iniciarJogo();
 }
 
 void draw() {
-    // ==================================================
-    // 1. EXIBIÇÃO DE INFORMAÇÕES NO TOPO DA TELA
     
-    // ==================================================
+    int loopSpeed = 1;
+
+    // Lógica de Transição de Velocidade
+    if (geracao <= GERACOES_MAX_ACELERADA) {
+        loopSpeed = TICKS_POR_FRAME; // Aceleração
+    }
     
-    drawFundo();
-    
-    // --- LÓGICA DE ATUALIZAÇÃO PARA TODOS OS PÁSSAROS ---
-    for(BirdCerebro bird : birdsAI){
-        if(bird.vivo){
-            bird.update();
-            bird.jump(); 
+    // Otimização: O loop executa a lógica do jogo 'loopSpeed' vezes por frame de desenho.
+    for (int t = 0; t < loopSpeed; t++) {
+        
+        if (contarPassarosVivos() > 0) {
             
-            // Verifica Colisão
-            for (Pipe p : pipes) {
-                if (bird.checkCollision(p)) {
-                    break; 
+            // --- LÓGICA DE ATUALIZAÇÃO PARA TODOS OS PÁSSAROS ---
+            for(BirdCerebro bird : birdsAI){
+                if(bird.vivo){
+                    bird.update(); 
+                    
+                    // Verifica Colisão
+                    for (Pipe p : pipes) {
+                        if (bird.checkCollision(p)) {
+                            break; 
+                        }
+                    }
                 }
             }
+            
+            // --- ATUALIZA E REMOVE OS TUBOS ---
+            for (int i = pipes.size() - 1; i >= 0; i--) {
+                Pipe p = pipes.get(i);
+                p.update();
+                
+                if (p.x + p.width < 0) {
+                    // CONTAGEM: O cano foi totalmente passado e saiu da tela
+                    pipesPassed++; 
+                    pipes.remove(i);
+                }
+            }
+            
+            // --- GERA NOVO TUBO ---
+            if (pipes.size() == 0 || pipes.get(pipes.size() - 1).x < width - DISTANCIA_ENTRE_TUBOS) {
+                pipes.add(new Pipe(width));
+            }
+
+        } else {
+            // Se a simulação acabou, reinicia imediatamente
+            reiniciarJogo();
+            return;
+        }
+    }
+    
+    // --- DESENHO (Visualização) ---
+    drawFundo();
+    
+    // Desenha pássaros e tubos
+    for(BirdCerebro bird : birdsAI){
+        if(bird.vivo){
             bird.draw();
         }
     }
-    
-    // --- ATUALIZA E DESENHA OS TUBOS ---
-    for (int i = pipes.size() - 1; i >= 0; i--) {
-        Pipe p = pipes.get(i);
-        p.update();
+    for (Pipe p : pipes) {
         p.draw();
-        
-        if (p.x + p.width < 0) {
-            pipes.remove(i);
-        }
     }
     
-    // --- GERA NOVO TUBO SE O ÚLTIMO ESTIVER LONGE O SUFICIENTE ---
-    if (pipes.size() == 0 || pipes.get(pipes.size() - 1).x < width - DISTANCIA_ENTRE_TUBOS) {
-        pipes.add(new Pipe(width));
-    }
+    // Exibe informações no topo da tela
+    fill(255);
+    textSize(24);
+    textAlign(LEFT, TOP);
+    text("Geração: " + geracao, 10, 10);
+    int vivos = contarPassarosVivos();
+    text("Vivos: " + vivos + "/" + POPULATION_SIZE, 10, 35);
     
-    // --- VERIFICA O FIM DA GERAÇÃO ---
-    if (contarPassarosVivos() == 0) {
-        reiniciarJogo(); 
-        return; 
+    // EXIBIÇÃO DO NOVO CONTADOR
+    text("Canos Passados: " + pipesPassed, 10, 60); 
+
+    // Mensagem de status da velocidade
+    if(loopSpeed == 1) {
+        textSize(18);
+        text("VELOCIDADE NORMAL", 10, 85);
     }
 }
 
@@ -93,6 +134,9 @@ void draw() {
 void iniciarJogo() {
     birdsAI.clear();
     geracaoAnterior.clear();
+    
+    // Reset do contador de canos
+    pipesPassed = 0; 
     
     // Cria a primeira geração (Aleatória)
     for(int i = 0; i < POPULATION_SIZE; i++){
@@ -120,39 +164,61 @@ void reiniciarJogo() {
     pipes.add(new Pipe(width));
     bgX = 0;
     fundoAtual = (fundoAtual + 1) % fundos.length;
-     surface.setTitle("Flappy Bird AI - Geração " + geracao);
+    surface.setTitle("Flappy Bird AI - Geração " + geracao);
+
+    // Reset do contador de canos para a nova geração
+    pipesPassed = 0; 
     
-    loop(); // Reinicia o loop de desenho/atualização
+    loop(); 
 }
 
 /**
-* Implementa a lógica do Algoritmo Genético: Seleção (Elite), Crossover e Mutação.
-* Esta função substitui os métodos evaluate, selection e reproduce que você descreveu.
-* @return A nova lista de pássaros (a próxima geração).
+* IMPLEMENTAÇÃO OTIMIZADA DO GA: Seleção Proporcional ao Fitness (Mating Pool).
+* Usa fitness = score * score.
 */
 ArrayList<BirdCerebro> criaProximaGeracao() {
     ArrayList<BirdCerebro> novaPopulacao = new ArrayList<BirdCerebro>();
     
-    // 1. AVALIAÇÃO/SELEÇÃO: Ordena pelo score (do maior para o menor)
-    geracaoAnterior.sort((a, b) -> Float.compare(b.score, a.score));
+    // --- PASSO 1: AVALIAÇÃO E CÁLCULO DE FITNESS ---
+    float somaTotalFitness = 0;
+    for (BirdCerebro b : geracaoAnterior) {
+        b.fitness = b.score * b.score; 
+        somaTotalFitness += b.fitness;
+    }
+    
+    // --- PASSO 2: SELEÇÃO (Criação da Piscina de Acasalamento) ---
+    ArrayList<BirdCerebro> matingPool = new ArrayList<BirdCerebro>();
+    final float MULTIPLICADOR_PISCINA = 10000; 
 
-    // 2. ELITISMO: Mantém o melhor pássaro
+    for (BirdCerebro b : geracaoAnterior) {
+        float fitnessNormalizado = b.fitness / somaTotalFitness;
+        int numAdicoes = (int) (fitnessNormalizado * MULTIPLICADOR_PISCINA);
+        
+        for (int j = 0; j < numAdicoes; j++) {
+             matingPool.add(b);
+        }
+    }
+    
+    // --- PASSO 3: REPRODUÇÃO E ELITISMO ---
+    
+    // 3.1 ELITISMO: Mantém o melhor pássaro 
+    geracaoAnterior.sort((a, b) -> Float.compare(b.score, a.score));
     BirdCerebro elite = geracaoAnterior.get(0);
     BirdCerebro eliteFilhote = new BirdCerebro(100, height/2); 
-    eliteFilhote.brain = new Brain(elite.brain.pesos); // Copia o cérebro perfeito
+    eliteFilhote.brain = new Brain(elite.brain.pesos);
     novaPopulacao.add(eliteFilhote); 
     
-    // 3. REPRODUÇÃO (Crossover e Seleção baseada na piscina implícita)
+    // 3.2 REPRODUÇÃO: Cria o restante da população
     for (int i = 1; i < POPULATION_SIZE; i++) {
-        // Seleção de Pais: Usa os 10% melhores como piscina de pais
-        int NUM_PAIS = max(10, geracaoAnterior.size() / 10);
         
-        BirdCerebro pai1 = geracaoAnterior.get((int)random(NUM_PAIS));
-        BirdCerebro pai2 = geracaoAnterior.get((int)random(NUM_PAIS));
+        if (matingPool.size() < 2) {
+             matingPool = geracaoAnterior;
+        }
+
+        BirdCerebro pai1 = matingPool.get((int) random(matingPool.size()));
+        BirdCerebro pai2 = matingPool.get((int) random(matingPool.size()));
         
-        // Chama o método reproduzir, que já faz Crossover e Mutação (conforme definido em Brain)
         BirdCerebro filhote = pai1.reproduzir(pai2);
-        
         novaPopulacao.add(filhote);
     }
     
@@ -162,27 +228,27 @@ ArrayList<BirdCerebro> criaProximaGeracao() {
 
 // ========================= FUNDO & IMAGENS =========================
 void drawFundo() {
-  image(fundos[fundoAtual], bgX, 0, width, height);
-  image(fundos[fundoAtual], bgX + width, 0, width, height);
+    image(fundos[fundoAtual], bgX, 0, width, height);
+    image(fundos[fundoAtual], bgX + width, 0, width, height);
 
-  bgX -= bgVel;
+    bgX -= bgVel;
 
-  if (bgX <= -width) {
-    bgX = 0;
-    fundoAtual = (fundoAtual + 1) % fundos.length;
-  }
+    if (bgX <= -width) {
+        bgX = 0;
+        fundoAtual = (fundoAtual + 1) % fundos.length;
+    }
 }
 
 void carregarImagens(){
-  tuboImagem = loadImage("resources/tubo.png");
-  tuboBocaImagem = loadImage("resources/tuboBoca.png");
-  birdImage = loadImage("resources/bird.png");
-  
-  fundos[0] = loadImage("resources/image1.jpg");
-  fundos[1] = loadImage("resources/image2.jpg");
-  fundos[2] = loadImage("resources/image3.jpeg");
-  fundos[3] = loadImage("resources/image4.jpg");
-  fundos[4] = loadImage("resources/image5.jpeg");
+    tuboImagem = loadImage("resources/tubo.png");
+    tuboBocaImagem = loadImage("resources/tuboBoca.png");
+    birdImage = loadImage("resources/bird.png");
+    
+    fundos[0] = loadImage("resources/image1.jpg");
+    fundos[1] = loadImage("resources/image2.jpg");
+    fundos[2] = loadImage("resources/image3.jpeg");
+    fundos[3] = loadImage("resources/image4.jpg");
+    fundos[4] = loadImage("resources/image5.jpeg");
 }
 
 // ========================= MÉTODO DE APOIO =========================
