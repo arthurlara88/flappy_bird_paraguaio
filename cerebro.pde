@@ -7,6 +7,32 @@ class Brain {
       pesos[i] = random(-1, 1); 
     }
   }
+  
+  Brain(float[] pesoExterno){this.pesos = pesoExterno;}
+  
+  Brain crossover(Brain outro){
+  
+    float[] pesosCerebroFilhote = new float[5];
+    
+    for(int i = 0; i < pesos.length; i++){
+      
+      if(random(0, 100) < 5){
+          pesosCerebroFilhote[i] = random(-1, 1);
+          continue;
+        }
+    
+      if(random(0, 10) > 5){
+       pesosCerebroFilhote[i] = this.pesos[i];
+      }else{
+        pesosCerebroFilhote[i] = outro.pesos[i];
+      }
+      
+    }
+    Brain novoCerebro = new Brain(pesosCerebroFilhote);
+    return novoCerebro;
+    
+    
+  }
 
   boolean decide(float[] inputs) {
     //Os inputs sao, em ordem : Altura do passaro, Distancia X do passaro em relacao ao centro do tubo, Distancia Y do passaro em relacao ao centro do tubo, constante 1;

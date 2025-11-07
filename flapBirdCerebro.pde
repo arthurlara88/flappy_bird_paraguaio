@@ -1,5 +1,4 @@
-
-// ========================= CLASSE BIRD =========================
+// --- CLASSE BIRDCEREBRO (Com as correções aplicadas) ---
 class BirdCerebro {
   float x, y;
   float velocity;
@@ -11,9 +10,7 @@ class BirdCerebro {
   float[] valoresInput = new float[5];
   Brain brain;
   
-  
-  
-  
+  float score = 0; // Fitness tracker
 
   BirdCerebro(float xInicial, float yInicial) {
     this.x = xInicial;
@@ -25,37 +22,33 @@ class BirdCerebro {
   }
 
   void update() {
+    score += 1; // Aumenta o score
+    
     velocity += gravity;
     y += velocity;
 
-    // Verifica se saiu da tela
     if (y > height || y < 0) {
       vivo = false;
     }
     
-
-      
-      try{
+    try{
         proximoPipe = encontrarTubo();
-      }catch(Exception e){
+    }catch(Exception e){
         return;
-      }
+    }
       
-      valoresInput[0] = this.y;
-      valoresInput[1] = this.distanciaPassaroTubo().x;
-      valoresInput[2] = this.distanciaPassaroTubo().y;
-      valoresInput[3] = this.velocity;
-      valoresInput[4] = 1;
+    valoresInput[0] = this.y;
+    valoresInput[1] = this.distanciaPassaroTubo().x;
+    valoresInput[2] = this.distanciaPassaroTubo().y;
+    valoresInput[3] = this.velocity;
+    valoresInput[4] = 1; // Bias Input
       
-      this.pular = brain.decide(valoresInput);
-    
+    this.pular = brain.decide(valoresInput);
   }
 
   void jump() {
-    
-   
     if(pular){
-    velocity = jumpForce;
+        velocity = jumpForce;
     }
   }
 
@@ -66,9 +59,7 @@ class BirdCerebro {
   }
 
   boolean checkCollision(Pipe pipe) {
-    // colisão horizontal
     boolean dentroX = x + 15 > pipe.x && x - 15 < pipe.x + pipe.width;
-    // colisão vertical (fora do vão)
     boolean foraDoGap = y - 15 < pipe.gapY - pipe.gapHeight/2 || y + 15 > pipe.gapY + pipe.gapHeight/2;
 
     if (dentroX && foraDoGap) {
@@ -80,23 +71,27 @@ class BirdCerebro {
   }
   
   PVector distanciaPassaroTubo(){
-  
     PVector posPassaro = new PVector(this.x, this.y);
     float[] centro = proximoPipe.coordenadasCentroTubo();
     PVector posPipe = new PVector(centro[0], centro[1]);
     return PVector.sub(posPassaro, posPipe);
+  }
+  
+  BirdCerebro reproduzir(BirdCerebro outro){
     
+    BirdCerebro filhote = new BirdCerebro(100, height/2); // Inicia nas posições de setup
+    
+    filhote.brain = this.brain.crossover(outro.brain);
+    
+    return filhote;
   }
   
   Pipe encontrarTubo() throws Exception{
-    
     for(Pipe pipe : pipes){
       if(pipe.x > this.x){
           return pipe;
       }
     }
     throw new Exception();
-    
-    
   }
 }
